@@ -39,7 +39,7 @@ export const Sidebar: React.FC = () => {
         </Button>
       </div>
 
-      {/* Búsqueda */}
+      {/* Search */}
       <div className="p-3 border-b border-gray-200">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -52,7 +52,7 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Lista de chats */}
+      {/* Chats*/}
       <div className="flex-1 overflow-y-auto">
         {filteredChats.map(chat => (
           <div

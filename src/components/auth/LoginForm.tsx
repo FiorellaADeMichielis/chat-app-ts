@@ -25,7 +25,7 @@ export const LoginForm: React.FC = () => {
     e.preventDefault();
     setError('');
     
-    // Validaciones básicas
+    // Basic validations - Must be improved
     if (!formData.email || !formData.password) {
       setError('All the fields are required');
       return;

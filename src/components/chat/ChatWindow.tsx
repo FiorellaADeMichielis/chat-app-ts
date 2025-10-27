@@ -35,7 +35,7 @@ export const ChatWindow: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col bg-gray-50 h-full">
-      {/* Header del chat */}
+      {/* Chat header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -52,7 +52,7 @@ export const ChatWindow: React.FC = () => {
         </div>
       </div>
 
-      {/* Área de mensajes */}
+      {/* Chat area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {chatMessages.map(message => {
           const isOwnMessage = message.sender.id === user?.id;

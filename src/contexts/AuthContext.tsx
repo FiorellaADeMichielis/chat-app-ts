@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkAuth = async () => {
       const token = localStorage.getItem('auth_token');
       if (token) {
-        // Simular usuario demo
+        // demo user
         const user: User = {
           id: '1',
           email: 'user@example.com',

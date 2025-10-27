@@ -5,7 +5,6 @@ import { LoginForm } from './components/auth/LoginForm';
 import { Sidebar } from './components/chat/Sidebar';
 import { ChatWindow } from './components/chat/ChatWindow';
 
-// Componente que muestra la app de chat
 const ChatApp: React.FC = () => {
   const { activeChat } = useChat();
 
@@ -35,7 +34,6 @@ const ChatApp: React.FC = () => {
   );
 };
 
-// Componente principal
 const AppContent: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
 

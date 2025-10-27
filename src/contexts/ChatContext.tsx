@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 
-// Tipos (igual que tienes)
+
 interface User {
   id: string;
   email: string;
@@ -42,7 +42,7 @@ interface ChatContextType extends ChatState {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-// mock data - CORREGIDO PARA QUE COINCIDAN NOMBRES
+
 const mockUsers: User[] = [
   {
     id: '2',
@@ -61,7 +61,7 @@ const mockUsers: User[] = [
 const mockChats: Chat[] = [
   {
     id: '1',
-    name: 'Juan Perez',      // ← AHORA COINCIDE con mockUsers[0].name
+    name: 'Juan Perez',      
     type: 'direct',
     participants: [mockUsers[0]],
     unreadCount: 2,
@@ -69,7 +69,7 @@ const mockChats: Chat[] = [
   },
   {
     id: '2',
-    name: 'Maria Lopez',     // ← AHORA COINCIDE con mockUsers[1].name
+    name: 'Maria Lopez',     
     type: 'direct', 
     participants: [mockUsers[1]],
     unreadCount: 0,
@@ -77,7 +77,6 @@ const mockChats: Chat[] = [
   }
 ];
 
-// Reducer (igual que tienes)
 type ChatAction =
   | { type: 'SET_ACTIVE_CHAT'; payload: Chat | null }
   | { type: 'SET_CHATS'; payload: Chat[] }
@@ -179,7 +178,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     dispatch({ type: 'ADD_MESSAGE', payload: newMessage });
 
-    // Template of a reply - AHORA SÍ FUNCIONARÁ
+    // Template of a reply
     setTimeout(() => {
       const replyMessage: Message = {
         id: (Date.now() + 1).toString(),
