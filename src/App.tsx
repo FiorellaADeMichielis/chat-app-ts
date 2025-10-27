@@ -1,35 +1,76 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ChatProvider, useChat } from './contexts/ChatContext';
+import { LoginForm } from './components/auth/LoginForm';
+import { Sidebar } from './components/chat/Sidebar';
+import { ChatWindow } from './components/chat/ChatWindow';
 
-function App() {
-  const [count, setCount] = useState(0)
+// Componente que muestra la app de chat
+const ChatApp: React.FC = () => {
+  const { activeChat } = useChat();
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="flex h-screen bg-gray-100">
+      <Sidebar />
+      <div className="flex-1 flex">
+        {activeChat ? (
+          <ChatWindow />
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+              <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 text-blue-600 font-semibold text-2xl">💬</div>
+              </div>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                Chat App
+              </h2>
+              <p className="text-gray-600">
+                Choose someone to start chatting!
+              </p>
+            </div>
+          </div>
+        )}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+    </div>
+  );
+};
+
+// Componente principal
+const AppContent: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 p-4">
+        <LoginForm />
+      </div>
+    );
+  }
+
+  return (
+    <ChatProvider>
+      <ChatApp />
+    </ChatProvider>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
 }
 
-export default App
+export default App;
