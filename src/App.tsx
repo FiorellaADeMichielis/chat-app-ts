@@ -4,6 +4,7 @@ import { ChatProvider, useChat } from './contexts/ChatContext';
 import { LoginForm } from './components/auth/LoginForm';
 import { Sidebar } from './components/chat/Sidebar';
 import { ChatWindow } from './components/chat/ChatWindow';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 const ChatApp: React.FC = () => {
   const { activeChat } = useChat();
@@ -39,9 +40,9 @@ const AppContent: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:bg-blue-100 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -50,7 +51,7 @@ const AppContent: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-300 to-purple-400 p-4">
         <LoginForm />
       </div>
     );
@@ -65,9 +66,11 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

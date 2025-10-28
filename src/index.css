@@ -1,1 +1,179 @@
-@import 'tailwindcss'
+@import 'tailwindcss';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Colors light mode*/
+    --color-bg-primary: 255 255 255;
+    --color-bg-secondary: 249 250 251;
+    --color-bg-tertiary: 243 244 246;
+    --color-text-primary: 17 24 39;
+    --color-text-secondary: 107 114 128;
+    --color-text-tertiary: 156 163 175;
+    --color-border: 229 231 235;
+    --color-accent: 199 210 254;
+    --color-accent-dark: 79 70 229;
+    
+    /* Sidebar*/
+    --color-sidebar: 255 255 255;
+    --color-header: 249 250 251;
+    --color-chat-item: 243 244 246;
+    --color-chat-hover: 243 244 246;
+    --color-chat-active: 239 246 255;
+    --color-chat-active-border: 59 130 246;
+    
+    /* Avatars */
+    --color-avatar: 37 99 235;
+    --color-avatar-icon: 255 255 255;
+    --color-chat-avatar: 219 234 254;
+    --color-chat-avatar-text: 37 99 235;
+    
+    /* Input */
+    --color-search-input: 243 244 246;
+    --color-search-border: 229 231 235;
+    
+    /* Badge */
+    --color-badge: 37 99 235;
+    --color-badge-text: 255 255 255;
+  }
+
+  .dark {
+    /* Basic colors dark mode */
+    --color-bg-primary: 30 41 59;
+    --color-bg-secondary: 15 23 42;
+    --color-bg-tertiary: 51 65 85;
+    --color-text-primary: 248 250 252;
+    --color-text-secondary: 203 213 225;
+    --color-text-tertiary: 148 163 184;
+    --color-border: 51 65 85;
+    --color-accent: 79 70 229;
+    --color-accent-dark: 199 210 254;
+    
+    /* Sidebar*/
+    --color-sidebar: 15 23 42;
+    --color-header: 30 41 59;
+    --color-chat-item: 51 65 85;
+    --color-chat-hover: 51 65 85;
+    --color-chat-active: 55 65 81;
+    --color-chat-active-border: 99 102 241;
+    
+    /* Avatars*/
+    --color-avatar: 79 70 229;
+    --color-avatar-icon: 255 255 255;
+    --color-chat-avatar: 55 65 81;
+    --color-chat-avatar-text: 147 197 253;
+    
+    /* Input*/
+    --color-search-input: 30 41 59;
+    --color-search-border: 51 65 85;
+    
+    /* Badge */
+    --color-badge: 79 70 229;
+    --color-badge-text: 255 255 255;
+  }
+}
+
+@layer utilities {
+  .bg-primary {
+    @apply bg-[rgb(var(--color-bg-primary))];
+  }
+  
+  .bg-secondary {
+    @apply bg-[rgb(var(--color-bg-secondary))];
+  }
+  
+  .bg-tertiary {
+    @apply bg-[rgb(var(--color-bg-tertiary))];
+  }
+  
+  .text-primary {
+    @apply text-[rgb(var(--color-text-primary))];
+  }
+  
+  .text-secondary {
+    @apply text-[rgb(var(--color-text-secondary))];
+  }
+  
+  .text-tertiary {
+    @apply text-[rgb(var(--color-text-tertiary))];
+  }
+  
+  .border-default {
+    @apply border-[rgb(var(--color-border))];
+  }
+  
+  .bg-accent {
+    @apply bg-[rgb(var(--color-accent))];
+  }
+  
+  .bg-accent-dark {
+    @apply bg-[rgb(var(--color-accent-dark))];
+  }
+  
+  .text-accent-dark {
+    @apply text-[rgb(var(--color-accent-dark))];
+  }
+  
+  /* Sidebar */
+  .bg-sidebar {
+    @apply bg-[rgb(var(--color-sidebar))];
+  }
+  
+  .bg-header {
+    @apply bg-[rgb(var(--color-header))];
+  }
+  
+  .border-chat-item {
+    @apply border-[rgb(var(--color-chat-item))];
+  }
+  
+  .bg-chat-hover {
+    @apply bg-[rgb(var(--color-chat-hover))];
+  }
+  
+  .bg-chat-active {
+    @apply bg-[rgb(var(--color-chat-active))];
+  }
+  
+  .border-chat-active-border {
+    @apply border-[rgb(var(--color-chat-active-border))];
+  }
+  
+  /* Avatars */
+  .bg-avatar {
+    @apply bg-[rgb(var(--color-avatar))];
+  }
+  
+  .text-avatar-icon {
+    @apply text-[rgb(var(--color-avatar-icon))];
+  }
+  
+  .bg-chat-avatar {
+    @apply bg-[rgb(var(--color-chat-avatar))];
+  }
+  
+  .text-chat-avatar-text {
+    @apply text-[rgb(var(--color-chat-avatar-text))];
+  }
+  
+  /* Input */
+  .bg-search-input {
+    @apply bg-[rgb(var(--color-search-input))];
+  }
+  
+  .border-search-border {
+    @apply border-[rgb(var(--color-search-border))];
+  }
+  
+  /* Badge */
+  .bg-badge {
+    @apply bg-[rgb(var(--color-badge))];
+  }
+  
+  .text-badge-text {
+    @apply text-[rgb(var(--color-badge-text))];
+  }
+}

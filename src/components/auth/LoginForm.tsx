@@ -46,7 +46,7 @@ export const LoginForm: React.FC = () => {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center text-whatsapp-600">
+        <CardTitle className="text-2xl font-bold text-center text-gray-900">
           Welcome back! Please log in to start chatting
         </CardTitle>
       </CardHeader>
