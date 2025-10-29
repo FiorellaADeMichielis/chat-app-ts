@@ -1,97 +1,28 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  status: 'online' | 'offline' | 'away';
-}
-
-interface Message {
-  id: string;
-  chatId: string;
-  sender: User;
-  content: string;
-  timestamp: Date;
-  type: 'text' | 'image' | 'file';
-  status: 'sent' | 'delivered' | 'read';
-}
-
-interface Chat {
-  id: string;
-  name: string;
-  type: 'direct' | 'group';
-  participants: User[];
-  lastMessage?: Message;
-  unreadCount: number;
-  createdAt: Date;
-}
-
-interface ChatState {
-  chats: Chat[];
-  activeChat: Chat | null;
-  messages: Message[];
-}
-
-interface ChatContextType extends ChatState {
-  setActiveChat: (chat: Chat | null) => void;
-  sendMessage: (content: string) => void;
-}
+import { chatService, type Chat as ApiChat, type Message as ApiMessage } from '../services/chatService';
+import type { Chat, Message, ChatState, ChatContextType } from '../types/chat';
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
-
-
-const mockUsers: User[] = [
-  {
-    id: '2',
-    name: 'Juan Perez',
-    email: 'juan@example.com',
-    status: 'online'
-  },
-  {
-    id: '3', 
-    name: 'Maria Lopez',
-    email: 'maria@example.com',
-    status: 'online'
-  }
-];
-
-const mockChats: Chat[] = [
-  {
-    id: '1',
-    name: 'Juan Perez',      
-    type: 'direct',
-    participants: [mockUsers[0]],
-    unreadCount: 2,
-    createdAt: new Date('2024-01-01')
-  },
-  {
-    id: '2',
-    name: 'Maria Lopez',     
-    type: 'direct', 
-    participants: [mockUsers[1]],
-    unreadCount: 0,
-    createdAt: new Date('2024-01-02')
-  }
-];
 
 type ChatAction =
   | { type: 'SET_ACTIVE_CHAT'; payload: Chat | null }
   | { type: 'SET_CHATS'; payload: Chat[] }
   | { type: 'SET_MESSAGES'; payload: Message[] }
   | { type: 'ADD_MESSAGE'; payload: Message }
-  | { type: 'MARK_CHAT_AS_READ'; payload: string };
+  | { type: 'MARK_CHAT_AS_READ'; payload: string }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'CLEAR_ERROR' };
 
 const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
   switch (action.type) {
     case 'SET_ACTIVE_CHAT':
       return { ...state, activeChat: action.payload };
     case 'SET_CHATS':
-      return { ...state, chats: action.payload };
+      return { ...state, chats: action.payload, error: null };
     case 'SET_MESSAGES':
-      return { ...state, messages: action.payload };
+      return { ...state, messages: action.payload, error: null };
     case 'ADD_MESSAGE':
       const newMessages = [...state.messages, action.payload];
       const updatedChats = state.chats.map(chat => 
@@ -113,6 +44,12 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
             : chat
         )
       };
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload, isLoading: false };
+    case 'CLEAR_ERROR':
+      return { ...state, error: null };
     default:
       return state;
   }
@@ -121,84 +58,149 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
 const initialState: ChatState = {
   chats: [],
   activeChat: null,
-  messages: []
+  messages: [],
+  isLoading: false,
+  error: null,
+};
+
+const adaptMessage = (apiMessage: ApiMessage): Message => {
+  return {
+    id: apiMessage.id,
+    chatId: apiMessage.chatId,
+    content: apiMessage.content,
+    timestamp: new Date(apiMessage.timestamp),
+    type: 'text',
+    status: 'read',
+    sender: {
+      id: apiMessage.sender.id,
+      name: apiMessage.sender.name
+    }
+  };
+};
+
+const adaptChat = (apiChat: ApiChat): Chat => {
+  return {
+    id: apiChat.id,
+    name: apiChat.name,
+    type: apiChat.type,
+    participants: apiChat.participants,
+    lastMessage: apiChat.lastMessage ? adaptMessage(apiChat.lastMessage) : undefined,
+    unreadCount: apiChat.unreadCount,
+    createdAt: new Date(),
+  };
 };
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(chatReducer, initialState);
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    dispatch({ type: 'SET_CHATS', payload: mockChats });
-    
-    if (user) {
-      const initialMessages: Message[] = [
-        {
-          id: '1',
-          chatId: '1',
-          sender: mockUsers[0],
-          content: 'Hi!',
-          timestamp: new Date(Date.now() - 3600000),
-          type: 'text',
-          status: 'read'
-        },
-        {
-          id: '2', 
-          chatId: '1',
-          sender: user,
-          content: 'Hey there! How is everything going?',
-          timestamp: new Date(Date.now() - 1800000),
-          type: 'text',
-          status: 'read'
-        }
-      ];
-      dispatch({ type: 'SET_MESSAGES', payload: initialMessages });
+    if (isAuthenticated && user) {
+      loadChats();
     }
-  }, [user]);
+  }, [isAuthenticated, user]);
 
-  const setActiveChat = (chat: Chat | null) => {
-    dispatch({ type: 'SET_ACTIVE_CHAT', payload: chat });
-    if (chat) {
-      dispatch({ type: 'MARK_CHAT_AS_READ', payload: chat.id });
+  useEffect(() => {
+    if (state.activeChat) {
+      loadMessages(state.activeChat.id);
+    }
+  }, [state.activeChat?.id]);
+
+  const loadChats = async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const apiChats = await chatService.getChats();
+      const adaptedChats = apiChats.map(adaptChat);
+      dispatch({ type: 'SET_CHATS', payload: adaptedChats });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Error al cargar los chats';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      console.error('Error loading chats:', error);
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  const sendMessage = (content: string) => {
+  const loadMessages = async (chatId: string) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const apiMessages = await chatService.getMessages(chatId);
+      const adaptedMessages = apiMessages.map(adaptMessage);
+      dispatch({ type: 'SET_MESSAGES', payload: adaptedMessages });
+      
+      await chatService.markAsRead(chatId);
+      dispatch({ type: 'MARK_CHAT_AS_READ', payload: chatId });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Error al cargar los mensajes';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      console.error('Error loading messages:', error);
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  const setActiveChat = (chat: Chat | null) => {
+    dispatch({ type: 'SET_ACTIVE_CHAT', payload: chat });
+  };
+
+  const sendMessage = async (content: string): Promise<void> => {
     if (!state.activeChat || !user) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      chatId: state.activeChat.id,
-      sender: user,
-      content: content,
-      timestamp: new Date(),
-      type: 'text',
-      status: 'sent'
-    };
-    
-    dispatch({ type: 'ADD_MESSAGE', payload: newMessage });
-
-    // Template of a reply
-    setTimeout(() => {
-      const replyMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        chatId: state.activeChat!.id,
-        sender: mockUsers.find(u => u.name === state.activeChat!.name) || mockUsers[0],
-        content: 'Hey! Give me a minute and I will read your message',
+    try {
+      const optimisticMessage: Message = {
+        id: `temp-${Date.now()}`,
+        chatId: state.activeChat.id,
+        sender: {
+          id: user.id,
+          name: user.name,
+        },
+        content: content,
         timestamp: new Date(),
         type: 'text',
-        status: 'delivered'
+        status: 'sent'
       };
-      dispatch({ type: 'ADD_MESSAGE', payload: replyMessage });
-    }, 2000);
+      
+      dispatch({ type: 'ADD_MESSAGE', payload: optimisticMessage });
+
+      const apiMessage = await chatService.sendMessage(state.activeChat.id, content);
+      const realMessage = adaptMessage(apiMessage);
+      
+      dispatch({ type: 'SET_MESSAGES', payload: 
+        state.messages.map(msg => 
+          msg.id === optimisticMessage.id ? realMessage : msg
+        )
+      });
+
+      dispatch({ 
+        type: 'SET_CHATS', 
+        payload: state.chats.map(chat =>
+          chat.id === state.activeChat!.id
+            ? { ...chat, lastMessage: realMessage }
+            : chat
+        )
+      });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Error al enviar el mensaje';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      console.error('Error sending message:', error);
+      throw error;
+    }
+  };
+
+  const clearError = () => {
+    dispatch({ type: 'CLEAR_ERROR' });
   };
 
   const value: ChatContextType = {
     chats: state.chats,
     activeChat: state.activeChat,
     messages: state.messages,
+    isLoading: state.isLoading,
+    error: state.error,
     setActiveChat,
     sendMessage,
+    loadChats,
+    clearError,
   };
 
   return (
@@ -208,10 +210,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-export const useChat = (): ChatContextType => {
+export function useChat(): ChatContextType {
   const context = useContext(ChatContext);
   if (context === undefined) {
     throw new Error('useChat must be used within ChatProvider');
   }
   return context;
-};
+}

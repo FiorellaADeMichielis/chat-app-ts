@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { authService, type AuthResponse } from '../services/authService';
 
 interface User {
   id: string;
@@ -12,12 +13,14 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  error: string | null;
 }
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,7 +28,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Reducer
 type AuthAction =
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_USER'; payload: User | null };
+  | { type: 'SET_USER'; payload: User | null }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'CLEAR_ERROR' };
 
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
@@ -35,8 +40,13 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return { 
         ...state, 
         user: action.payload, 
-        isAuthenticated: !!action.payload 
+        isAuthenticated: !!action.payload,
+        error: null 
       };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload, isLoading: false };
+    case 'CLEAR_ERROR':
+      return { ...state, error: null };
     default:
       return state;
   }
@@ -46,6 +56,7 @@ const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
   isLoading: true,
+  error: null,
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -55,14 +66,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkAuth = async () => {
       const token = localStorage.getItem('auth_token');
       if (token) {
-        // demo user
-        const user: User = {
-          id: '1',
-          email: 'user@example.com',
-          name: 'Demo User',
-          status: 'online'
-        };
-        dispatch({ type: 'SET_USER', payload: user });
+        try {
+          // Verifies token with the API
+          const userData = await authService.getCurrentUser();
+          dispatch({ type: 'SET_USER', payload: userData });
+        } catch (error) {
+          // expired or invalid token
+          localStorage.removeItem('auth_token');
+          dispatch({ type: 'SET_USER', payload: null });
+        }
+      } else {
+        dispatch({ type: 'SET_USER', payload: null });
       }
       dispatch({ type: 'SET_LOADING', payload: false });
     };
@@ -72,20 +86,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'CLEAR_ERROR' });
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response: AuthResponse = await authService.login({ email, password });
       
-      const user: User = {
-        id: '1',
-        email,
-        name: email.split('@')[0],
-        status: 'online'
-      };
+      //Saves token
+      localStorage.setItem('auth_token', response.token);
       
-      localStorage.setItem('auth_token', 'fake-jwt-token');
-      dispatch({ type: 'SET_USER', payload: user });
-    } catch (error) {
-      throw new Error('Credentials not valid');
+      // Refreshes the user state
+      dispatch({ type: 'SET_USER', payload: response.user });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'There has been an error trying to log in';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      throw new Error(errorMessage);
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -93,28 +107,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (name: string, email: string, password: string): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'CLEAR_ERROR' });
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response: AuthResponse = await authService.register({ name, email, password });
       
-      const user: User = {
-        id: Date.now().toString(),
-        email,
-        name,
-        status: 'online'
-      };
-      
-      localStorage.setItem('auth_token', 'fake-jwt-token');
-      dispatch({ type: 'SET_USER', payload: user });
-    } catch (error) {
-      throw new Error('Error signing up');
+      localStorage.setItem('auth_token', response.token);
+
+      dispatch({ type: 'SET_USER', payload: response.user });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'There has been an error trying to sign up';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      throw new Error(errorMessage);
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  const logout = (): void => {
-    localStorage.removeItem('auth_token');
-    dispatch({ type: 'SET_USER', payload: null });
+  const logout = async (): Promise<void> => {
+    try {
+      // Notifies the server about the logout
+      await authService.logout();
+    } catch (error) {
+      console.error('Error al cerrar sesión en el servidor:', error);
+    } finally {
+      localStorage.removeItem('auth_token');
+      dispatch({ type: 'SET_USER', payload: null });
+    }
+  };
+
+  const clearError = (): void => {
+    dispatch({ type: 'CLEAR_ERROR' });
   };
 
   const value: AuthContextType = {
@@ -122,6 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     register,
     logout,
+    clearError,
   };
 
   return (
