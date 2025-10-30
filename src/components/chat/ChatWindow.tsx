@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, Smile } from 'lucide-react';
-import { useChat } from '../../contexts/ChatContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useChat } from '../../hooks/useChat';
+import { useAuth } from '../../hooks/useAuth';
 import { formatTime } from '../../lib/utils';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -46,7 +46,7 @@ export const ChatWindow: React.FC = () => {
           <div>
             <h3 className="font-semibold text-primary">{activeChat.name}</h3>
             <p className="text-sm text-secondary">
-              {activeChat.type === 'direct' ? 'Online' : `${activeChat.participants.length} users`}
+              {activeChat.type === 'direct' ? 'Online' : `${activeChat.participantIds.length} users`}
             </p>
           </div>
         </div>

@@ -1,10 +1,13 @@
 import React from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ChatProvider, useChat } from './contexts/ChatContext';
+import { AuthProvider} from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
+import { ChatProvider} from './contexts/ChatContext';
 import { LoginForm } from './components/auth/LoginForm';
 import { Sidebar } from './components/chat/Sidebar';
 import { ChatWindow } from './components/chat/ChatWindow';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { useChat } from './hooks/useChat';
+
 
 const ChatApp: React.FC = () => {
   const { activeChat } = useChat();

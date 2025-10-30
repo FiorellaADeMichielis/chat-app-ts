@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { useAuth } from './AuthContext';
+import React, { createContext, useReducer, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { chatService, type Chat as ApiChat, type Message as ApiMessage } from '../services/chatService';
 import type { Chat, Message, ChatState, ChatContextType } from '../types/chat';
 
-const ChatContext = createContext<ChatContextType | undefined>(undefined);
+export const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 type ChatAction =
   | { type: 'SET_ACTIVE_CHAT'; payload: Chat | null }
@@ -83,14 +83,14 @@ const adaptChat = (apiChat: ApiChat): Chat => {
     id: apiChat.id,
     name: apiChat.name,
     type: apiChat.type,
-    participants: apiChat.participants,
+    participantIds: apiChat.participants,
     lastMessage: apiChat.lastMessage ? adaptMessage(apiChat.lastMessage) : undefined,
     unreadCount: apiChat.unreadCount,
     createdAt: new Date(),
   };
 };
 
-export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+function ChatProviderComponent({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
   const { user, isAuthenticated } = useAuth();
 
@@ -113,7 +113,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const adaptedChats = apiChats.map(adaptChat);
       dispatch({ type: 'SET_CHATS', payload: adaptedChats });
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Error al cargar los chats';
+      const errorMessage = error.response?.data?.message || 'Error loading chats';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       console.error('Error loading chats:', error);
     } finally {
@@ -131,7 +131,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await chatService.markAsRead(chatId);
       dispatch({ type: 'MARK_CHAT_AS_READ', payload: chatId });
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Error al cargar los mensajes';
+      const errorMessage = error.response?.data?.message || 'Error loading messages';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       console.error('Error loading messages:', error);
     } finally {
@@ -180,7 +180,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         )
       });
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Error al enviar el mensaje';
+      const errorMessage = error.response?.data?.message || 'Error sending message';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       console.error('Error sending message:', error);
       throw error;
@@ -208,12 +208,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </ChatContext.Provider>
   );
-};
-
-export function useChat(): ChatContextType {
-  const context = useContext(ChatContext);
-  if (context === undefined) {
-    throw new Error('useChat must be used within ChatProvider');
-  }
-  return context;
 }
+
+export const ChatProvider = ChatProviderComponent;

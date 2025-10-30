@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, LogOut, User, Moon, Sun } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useChat } from '../../contexts/ChatContext';
+import { useAuth } from '../../hooks/useAuth';
+import { useChat } from '../../hooks/useChat';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatTime } from '../../lib/utils';
 import { Button } from '../ui/Button';

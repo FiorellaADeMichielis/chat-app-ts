@@ -24,7 +24,7 @@ export interface Chat {
   id: string;
   name: string;
   type: 'direct' | 'group';
-  participants: string[];
+  participantIds: string[];
   lastMessage?: Message;
   unreadCount: number;
   createdAt: Date;

@@ -1,9 +1,14 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// API Mock for testing
+const MOCK_MODE = true; // Theres no backend. When the backend is implemented this must be changed to false
+
+if (MOCK_MODE) {
+  console.log('⚠️ MOCK MODE ON - No real backend being used');
+}
 
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: MOCK_MODE ? 'https://jsonplaceholder.typicode.com' : import.meta.env.VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
