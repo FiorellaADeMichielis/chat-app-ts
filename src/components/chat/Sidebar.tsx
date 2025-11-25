@@ -1,53 +1,81 @@
-import React, { useState } from 'react';
-import { Search, LogOut, User, Moon, Sun } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Search, Moon, Sun, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useChat } from '../../hooks/useChat';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatTime } from '../../lib/utils';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { UserMenu } from './UserMenu';
 
 export const Sidebar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { chats, activeChat, setActiveChat } = useChat();
   const { theme, toggleTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userHeaderRef = useRef<HTMLDivElement>(null);
 
   const filteredChats = chats.filter(chat =>
     chat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleLogout = () => {
-    if (window.confirm('Are you sure you want to log out?')) {
-      logout();
-    }
-  };
-
   return (
     <div className="flex flex-col w-80 bg-sidebar border-r border-default h-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-header border-b border-default">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-avatar rounded-full flex items-center justify-center">
-            <User className="w-6 h-6 text-avatar-icon" />
-          </div>
-          <div>
-            <p className="font-semibold text-primary">{user?.name}</p>
-            <p className="text-sm text-secondary capitalize">{user?.status}</p>
+      <div className="relative">
+        <div
+          ref={userHeaderRef}
+          onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+          className="flex items-center justify-between p-4 bg-header border-b border-default cursor-pointer hover:bg-secondary transition-colors"
+          role="button"
+          aria-expanded={isUserMenuOpen}
+          aria-haspopup="menu"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsUserMenuOpen(!isUserMenuOpen);
+            }
+          }}
+        >
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div className="w-10 h-10 bg-avatar rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="w-6 h-6 text-avatar-icon font-semibold">
+                {user?.name.charAt(0)}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-primary truncate">{user?.name}</p>
+              <p className="text-sm text-secondary capitalize truncate">{user?.status}</p>
+            </div>
+            <ChevronDown
+              size={20}
+              className={`text-secondary transition-transform ${
+                isUserMenuOpen ? 'rotate-180' : ''
+              }`}
+            />
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={toggleTheme}>
-            {theme === 'light' ? (
-              <Moon className="w-4 h-4 text-secondary" />
-            ) : (
-              <Sun className="w-4 h-4 text-secondary" />
-            )}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 text-secondary" />
-          </Button>
-        </div>
+
+        {/* User Menu */}
+        <UserMenu
+          isOpen={isUserMenuOpen}
+          onClose={() => setIsUserMenuOpen(false)}
+          anchorRef={userHeaderRef}
+        />
+      </div>
+
+      {/* Theme toggle button */}
+      <div className="px-3 py-2 border-b border-default flex items-center justify-between bg-sidebar">
+        <span className="text-xs text-secondary font-medium">Appearance</span>
+        <Button variant="ghost" size="sm" onClick={toggleTheme}>
+          {theme === 'light' ? (
+            <Moon className="w-4 h-4" />
+          ) : (
+            <Sun className="w-4 h-4" />
+          )}
+        </Button>
       </div>
 
       {/* Search */}
@@ -63,7 +91,7 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Chats*/}
+      {/* Chats */}
       <div className="flex-1 overflow-y-auto bg-sidebar">
         {filteredChats.map(chat => (
           <div

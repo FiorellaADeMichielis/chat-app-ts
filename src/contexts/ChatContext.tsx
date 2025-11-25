@@ -10,6 +10,7 @@ type ChatAction =
   | { type: 'SET_CHATS'; payload: Chat[] }
   | { type: 'SET_MESSAGES'; payload: Message[] }
   | { type: 'ADD_MESSAGE'; payload: Message }
+  | { type: 'UPDATE_MESSAGE'; payload: Message } 
   | { type: 'MARK_CHAT_AS_READ'; payload: string }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
@@ -24,6 +25,9 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
     case 'SET_MESSAGES':
       return { ...state, messages: action.payload, error: null };
     case 'ADD_MESSAGE':
+      const messageExists = state.messages.some(m => m.id === action.payload.id);
+      if (messageExists) return state;
+      
       const newMessages = [...state.messages, action.payload];
       const updatedChats = state.chats.map(chat => 
         chat.id === action.payload.chatId
@@ -32,9 +36,18 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
       );
       return { 
         ...state, 
-        messages: newMessages, 
+        messages: newMessages,
         chats: updatedChats 
       };
+
+    case 'UPDATE_MESSAGE':
+      return {
+        ...state,
+        messages: state.messages.map(msg =>
+          msg.id === action.payload.id ? action.payload : msg
+        ),
+      };
+      
     case 'MARK_CHAT_AS_READ':
       return {
         ...state,
@@ -126,7 +139,17 @@ function ChatProviderComponent({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', payload: true });
       const apiMessages = await chatService.getMessages(chatId);
       const adaptedMessages = apiMessages.map(adaptMessage);
-      dispatch({ type: 'SET_MESSAGES', payload: adaptedMessages });
+      
+      const otherChatMessages = state.messages.filter(msg => msg.chatId !== chatId);
+      const allMessages = [...otherChatMessages, ...adaptedMessages];
+      
+      console.log('📥 Loaded messages:', {
+        chatId,
+        newMessages: adaptedMessages.length,
+        totalMessages: allMessages.length
+      });
+      
+      dispatch({ type: 'SET_MESSAGES', payload: allMessages });
       
       await chatService.markAsRead(chatId);
       dispatch({ type: 'MARK_CHAT_AS_READ', payload: chatId });
@@ -146,31 +169,33 @@ function ChatProviderComponent({ children }: { children: React.ReactNode }) {
   const sendMessage = async (content: string): Promise<void> => {
     if (!state.activeChat || !user) return;
 
+    const optimisticMessage: Message = {
+      id: `temp-${Date.now()}`,
+      chatId: state.activeChat.id,
+      sender: {
+        id: user.id,
+        name: user.name,
+      },
+      content: content,
+      timestamp: new Date(),
+      type: 'text',
+      status: 'sent'
+    };
+
     try {
-      const optimisticMessage: Message = {
-        id: `temp-${Date.now()}`,
-        chatId: state.activeChat.id,
-        sender: {
-          id: user.id,
-          name: user.name,
-        },
-        content: content,
-        timestamp: new Date(),
-        type: 'text',
-        status: 'sent'
-      };
-      
+      console.log('Sending optimistic message:', optimisticMessage);
       dispatch({ type: 'ADD_MESSAGE', payload: optimisticMessage });
 
       const apiMessage = await chatService.sendMessage(state.activeChat.id, content);
       const realMessage = adaptMessage(apiMessage);
       
-      dispatch({ type: 'SET_MESSAGES', payload: 
-        state.messages.map(msg => 
-          msg.id === optimisticMessage.id ? realMessage : msg
-        )
-      });
-
+      console.log('Received real message:', realMessage);
+      
+      dispatch({ type: 'UPDATE_MESSAGE', payload: realMessage });
+      if (optimisticMessage.id !== realMessage.id) {
+        const messagesWithoutTemp = state.messages.filter(m => m.id !== optimisticMessage.id);
+        dispatch({ type: 'SET_MESSAGES', payload: [...messagesWithoutTemp, realMessage] });
+      }
       dispatch({ 
         type: 'SET_CHATS', 
         payload: state.chats.map(chat =>
@@ -182,7 +207,13 @@ function ChatProviderComponent({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Error sending message';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      console.error('Error sending message:', error);
+      console.error(' Error sending message:', error);
+      
+      dispatch({ 
+        type: 'SET_MESSAGES', 
+        payload: state.messages.filter(m => m.id !== optimisticMessage.id) 
+      });
+      
       throw error;
     }
   };

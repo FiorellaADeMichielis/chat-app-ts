@@ -10,6 +10,7 @@ export const ChatWindow: React.FC = () => {
   const { activeChat, messages, sendMessage } = useChat();
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -20,16 +21,34 @@ export const ChatWindow: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (newMessage.trim() && activeChat) {
-      sendMessage(newMessage.trim());
-      setNewMessage('');
+    if (!newMessage.trim() || !activeChat || isSending) return;
+
+    try {
+      setIsSending(true);
+      await sendMessage(newMessage.trim());
+      setNewMessage(''); 
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // TODO: Mostrar notificación de error
+    } finally {
+      setIsSending(false);
     }
   };
 
+  // Filter messages for the active chat
   const chatMessages = messages.filter(msg => msg.chatId === activeChat?.id);
+
+  // debug
+  useEffect(() => {
+    console.log('Messages:', {
+      total: messages.length,
+      filtered: chatMessages.length,
+      activeChatId: activeChat?.id,
+    });
+  }, [messages, chatMessages.length, activeChat?.id]);
 
   if (!activeChat) return null;
 
@@ -38,8 +57,8 @@ export const ChatWindow: React.FC = () => {
       {/* Chat header */}
       <div className="bg-primary border-b border-default px-6 py-4">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-            <div className="w-6 h-6 text-blue-600 font-semibold">
+          <div className="w-10 h-10 bg-avatar rounded-full flex items-center justify-center">
+            <div className="w-6 h-6 text-avatar-icon font-semibold">
               {activeChat.name.charAt(0)}
             </div>
           </div>
@@ -54,45 +73,56 @@ export const ChatWindow: React.FC = () => {
 
       {/* Chat area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {chatMessages.map(message => {
-          const isOwnMessage = message.sender.id === user?.id;
-          
-          return (
-            <div
-              key={message.id}
-              className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-            >
+        {chatMessages.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-secondary text-sm">No messages yet. Start the conversation!</p>
+          </div>
+        ) : (
+          chatMessages.map(message => {
+            const isOwnMessage = message.sender.id === user?.id;
+            
+            return (
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                  isOwnMessage
-                    ? 'bg-primary text-primary rounded-br-none'
-                    : 'bg-primary text-primary rounded-bl-none border border-default'
-                }`}
+                key={message.id}
+                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
               >
-                {!isOwnMessage && (
-                  <p className="text-xs font-medium text-accent-dark mb-1">
-                    {message.sender.name}
-                  </p>
-                )}
-                <p className="text-sm">{message.content}</p>
-                <p
-                  className={`text-xs mt-1 text-right ${
-                    isOwnMessage ? 'text-tertiary' : 'text-secondary'
+                <div
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+                    isOwnMessage
+                      ? 'bg-accent text-primary rounded-br-none'
+                      : 'bg-primary text-primary rounded-bl-none border border-default'
                   }`}
                 >
-                  {formatTime(message.timestamp)}
-                </p>
+                  {!isOwnMessage && (
+                    <p className="text-xs font-medium text-accent-dark mb-1">
+                      {message.sender.name}
+                    </p>
+                  )}
+                  <p className="text-sm">{message.content}</p>
+                  <p
+                    className={`text-xs mt-1 text-right ${
+                      isOwnMessage ? 'text-white/70' : 'text-secondary'
+                    }`}
+                  >
+                    {formatTime(message.timestamp)}
+                  </p>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
         <div ref={messagesEndRef} />
       </div>
 
       {/* message input */}
       <div className="bg-primary border-t border-default p-4">
         <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-          <Button type="button" variant="ghost" size="sm">
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="sm"
+            disabled={isSending}
+          >
             <Paperclip className="w-5 h-5 text-secondary" />
           </Button>
           
@@ -101,20 +131,28 @@ export const ChatWindow: React.FC = () => {
               placeholder="Type something..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              className="bg-tertiary border-0 text-secondary focus:ring-1 focus:ring-indigo-900"
+              className="bg-tertiary border-0 text-primary focus:ring-1 focus:ring-accent"
+              disabled={isSending}
+              autoFocus
             />
           </div>
           
-          <Button type="button" variant="ghost" size="sm">
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="sm"
+            disabled={isSending}
+          >
             <Smile className="w-5 h-5 text-secondary" />
           </Button>
           
           <Button 
             type="submit" 
             size="sm"
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || isSending}
+            isLoading={isSending}
           >
-            <Send className="w-5 h-5 text-secondary" />
+            <Send className="w-5 h-5 text-white" />
           </Button>
         </form>
       </div>

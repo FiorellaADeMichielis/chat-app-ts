@@ -2,20 +2,30 @@ import React from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { ChatProvider } from './contexts/ChatContext';
+import { NavigationProvider } from './contexts/NavigationContext';
+import { useNavigation } from './hooks/useNavigation';
 import { AuthForm } from './components/auth/AuthForm';
 import { Sidebar } from './components/chat/Sidebar';
 import { ChatWindow } from './components/chat/ChatWindow';
+import { ProfileView } from './components/profile/ProfileView';
+import { SettingsView } from './components/profile/SettingsView';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useChat } from './hooks/useChat';
 
 const ChatApp: React.FC = () => {
   const { activeChat } = useChat();
+  const { currentView } = useNavigation();
 
-  return (
-    <div className="flex h-screen bg-secondary">
-      <Sidebar />
-      <div className="flex-1 flex">
-        {activeChat ? (
+  // Render main content based on current view
+  const renderMainContent = () => {
+    switch (currentView) {
+      case 'profile':
+        return <ProfileView />;
+      case 'settings':
+        return <SettingsView />;
+      case 'chat':
+      default:
+        return activeChat ? (
           <ChatWindow />
         ) : (
           <div className="flex-1 flex items-center justify-center bg-primary">
@@ -31,7 +41,15 @@ const ChatApp: React.FC = () => {
               </p>
             </div>
           </div>
-        )}
+        );
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-secondary">
+      <Sidebar />
+      <div className="flex-1 flex">
+        {renderMainContent()}
       </div>
     </div>
   );
@@ -54,7 +72,7 @@ const AppContent: React.FC = () => {
   }
 
   if (!isAuthenticated) {
-    console.log('Showing authForm'); //Debug
+    console.log('Showing authForm');
     return (
       <div className="min-h-screen flex items-center justify-center bg-secondary p-4">
         <AuthForm />
@@ -62,16 +80,18 @@ const AppContent: React.FC = () => {
     );
   }
 
-  console.log('User authenticated'); //Debug
+  console.log('User authenticated');
   return (
-    <ChatProvider>
-      <ChatApp />
-    </ChatProvider>
+    <NavigationProvider>
+      <ChatProvider>
+        <ChatApp />
+      </ChatProvider>
+    </NavigationProvider>
   );
 };
 
 function App() {
-  console.log('Rendering...'); // Debug
+  console.log('Rendering...');
   
   return (
     <ThemeProvider>
