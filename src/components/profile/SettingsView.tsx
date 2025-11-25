@@ -1,10 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; // 1. Hook de React Router
 import { ArrowLeft, Bell, Lock, Globe, Palette } from 'lucide-react';
-import { useNavigation } from '../../hooks/useNavigation';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export const SettingsView: React.FC = () => {
-  const { goBack } = useNavigation();
+  const navigate = useNavigate(); // 2. Inicializamos el hook
   const { theme, toggleTheme } = useTheme();
 
   const settingsSections = [
@@ -77,7 +77,7 @@ export const SettingsView: React.FC = () => {
           label: 'App Language',
           description: 'Choose your preferred language',
           control: (
-            <select className="px-4 py-2 bg-secondary border border-default rounded-lg text-primary text-sm">
+            <select className="px-4 py-2 bg-secondary border border-default rounded-lg text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent">
               <option>English</option>
               <option>Spanish</option>
               <option>Portuguese</option>
@@ -94,7 +94,7 @@ export const SettingsView: React.FC = () => {
       <div className="bg-primary border-b border-default px-6 py-4 sticky top-0 z-10">
         <div className="flex items-center space-x-4">
           <button
-            onClick={goBack}
+            onClick={() => navigate(-1)} // 3. Navegación hacia atrás correcta
             className="text-secondary hover:text-primary transition-colors"
             aria-label="Go back"
           >
@@ -117,11 +117,11 @@ export const SettingsView: React.FC = () => {
               <div className="divide-y divide-default">
                 {section.settings.map((setting, settingIndex) => (
                   <div key={settingIndex} className="px-6 py-4 flex items-center justify-between">
-                    <div className="flex-1">
+                    <div className="flex-1 pr-4">
                       <p className="font-medium text-primary">{setting.label}</p>
                       <p className="text-sm text-secondary mt-1">{setting.description}</p>
                     </div>
-                    <div className="ml-4">{setting.control}</div>
+                    <div className="flex-shrink-0">{setting.control}</div>
                   </div>
                 ))}
               </div>

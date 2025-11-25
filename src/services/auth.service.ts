@@ -1,16 +1,20 @@
 import { apiClient } from '../lib/api';
+import type { User, LoginCredentials } from '../types/types';
 
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
+// Input DTOs
 export interface RegisterData {
   name: string;
   email: string;
   password: string;
 }
 
+// Response structure specifically for Auth (Token + User)
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+// Raw response from the API for authentication
 interface ApiAuthResponse {
   token: string;
   user: {
@@ -18,57 +22,54 @@ interface ApiAuthResponse {
     name: string;
     email: string;
     status: string;
+    avatar?: string;
   };
 }
 
-export interface AuthResponse {
-  token: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    status: 'online' | 'offline' | 'away';
-  };
-}
+// --- ADAPTERS ---
 
-const normalizeStatus = (status: string): 'online' | 'offline' | 'away' => {
+const normalizeStatus = (status: string): User['status'] => {
   const validStatuses = ['online', 'offline', 'away'];
   return validStatuses.includes(status) 
-    ? (status as 'online' | 'offline' | 'away')
-    : 'online';
+    ? (status as User['status'])
+    : 'offline'; // Default safety fallback
 };
 
-const adaptUserResponse = (apiUser: ApiAuthResponse['user']): AuthResponse['user'] => {
+const adaptUserResponse = (apiUser: ApiAuthResponse['user']): User => {
   return {
     id: apiUser.id,
     name: apiUser.name,
     email: apiUser.email,
     status: normalizeStatus(apiUser.status),
+    avatar: apiUser.avatar, // Pass through or undefined
+    lastSeen: new Date(), // Set default or parse from API
   };
 };
 
-const MOCK_MODE = true; 
+// Use Environment Variable for Mock Mode
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || true; // Fallback to true for dev
 
 export const authService = {
+  
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    if (MOCK_MODE) {
-      
-      console.log(' Mock login:', credentials.email);
-
-      await new Promise(resolve => setTimeout(resolve, 500));
+    if (USE_MOCK) {
+      console.log('[AuthService] 🎭 Mock login:', credentials.email);
+      await new Promise(resolve => setTimeout(resolve, 800)); // Latency
       
       return {
         token: 'mock-jwt-token-' + Date.now(),
         user: {
           id: '1',
-          name: credentials.email.split('@')[0],
+          name: 'Fiorella Dev',
           email: credentials.email,
           status: 'online',
+          avatar: `https://ui-avatars.com/api/?name=${credentials.email}&background=random`,
+          lastSeen: new Date()
         },
       };
     }
     
-    // real API
+    // Real API Call
     const response = await apiClient.post<ApiAuthResponse>('/auth/login', credentials);
     return {
       token: response.data.token,
@@ -77,9 +78,9 @@ export const authService = {
   },
 
   async register(data: RegisterData): Promise<AuthResponse> {
-    if (MOCK_MODE) {
-      console.log('Mock Sign up:', data.email);
-      await new Promise(resolve => setTimeout(resolve, 500));
+    if (USE_MOCK) {
+      console.log('[AuthService] 🎭 Mock register:', data.email);
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       return {
         token: 'mock-jwt-token-' + Date.now(),
@@ -88,6 +89,8 @@ export const authService = {
           name: data.name,
           email: data.email,
           status: 'online',
+          avatar: `https://ui-avatars.com/api/?name=${data.name}&background=random`,
+          lastSeen: new Date()
         },
       };
     }
@@ -100,8 +103,8 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    if (MOCK_MODE) {
-      console.log("Mock logout");
+    if (USE_MOCK) {
+      console.log("[AuthService] 🎭 Mock logout");
       await new Promise(resolve => setTimeout(resolve, 200));
       return;
     }
@@ -109,21 +112,21 @@ export const authService = {
     await apiClient.post('/auth/logout');
   },
 
-  async getCurrentUser(): Promise<AuthResponse['user']> {
-    if (MOCK_MODE) {
-      console.log('🎭 Mock getCurrentUser');
-      
-      
+  async getCurrentUser(): Promise<User> {
+    if (USE_MOCK) {
+      console.log('[AuthService] Mock getCurrentUser');
       const token = localStorage.getItem('auth_token');
-      if (!token) {
-        throw new Error('No token found');
-      }
       
+      // Simulate checking token validity
+      if (!token) throw new Error('No token found');
+
       return {
         id: '1',
-        name: 'Demo User',
+        name: 'Fiorella Dev',
         email: 'demo@example.com',
         status: 'online',
+        avatar: 'https://ui-avatars.com/api/?name=Fiorella+Dev',
+        lastSeen: new Date()
       };
     }
     

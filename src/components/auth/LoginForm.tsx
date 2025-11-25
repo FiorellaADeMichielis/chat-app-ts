@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; 
 import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card'; 
 
 interface LoginFormData {
   email: string;
@@ -19,7 +20,9 @@ const ERROR_MESSAGES = {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const LoginForm: React.FC = () => {
-  const { login, isLoading, error: authError } = useAuth();
+  const navigate = useNavigate();
+  // Destructure clearError to improve UX
+  const { login, isLoading, error: authError, clearError } = useAuth();
   
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
@@ -49,9 +52,9 @@ export const LoginForm: React.FC = () => {
       [name]: value,
     }));
     
-    if (validationError) {
-      setValidationError('');
-    }
+    //Clear BOTH local and global errors when user types
+    if (validationError) setValidationError('');
+    if (authError) clearError(); 
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -66,22 +69,23 @@ export const LoginForm: React.FC = () => {
 
     try {
       await login(formData.email.trim(), formData.password);
+      //Navigate on success
+      navigate('/'); 
     } catch (err) {
-      setValidationError(
-        err instanceof Error ? err.message : ERROR_MESSAGES.LOGIN_FAILED
-      );
+      console.error("Login submission failed", err);
     }
   };
 
+  //Prioritize validation errors over auth errors for display
   const displayError = validationError || authError;
 
   return (
-    <Card className="w-full max-w-md mx-auto bg-primary">
+    <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 shadow-xl">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center text-primary">
+        <CardTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">
           Welcome back!
         </CardTitle>
-        <p className="text-center text-secondary text-sm mt-2">
+        <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-2">
           Please log in to start chatting
         </p>
       </CardHeader>
@@ -109,7 +113,6 @@ export const LoginForm: React.FC = () => {
             required
             autoComplete="email"
             aria-label="Email address"
-            aria-required="true"
           />
 
           <Input
@@ -123,7 +126,6 @@ export const LoginForm: React.FC = () => {
             required
             autoComplete="current-password"
             aria-label="Password"
-            aria-required="true"
           />
 
           <Button

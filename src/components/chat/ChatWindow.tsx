@@ -32,7 +32,6 @@ export const ChatWindow: React.FC = () => {
       setNewMessage(''); 
     } catch (error) {
       console.error('Error sending message:', error);
-      // TODO: Mostrar notificación de error
     } finally {
       setIsSending(false);
     }

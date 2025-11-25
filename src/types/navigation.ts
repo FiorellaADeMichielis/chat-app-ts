@@ -1,8 +1,8 @@
 export type AppView = 
-  | 'chat'           // Chat
-  | 'profile'        // user profile
-  | 'settings'       // Settings
-  | 'notifications'; // Notifications
+  | 'chat'           
+  | 'profile'        
+  | 'settings'       
+  | 'notifications'; 
 
 export interface NavigationState {
   currentView: AppView;
