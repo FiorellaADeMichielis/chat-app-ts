@@ -1,27 +1,31 @@
 import { apiClient } from '../lib/api';
-import type { User } from '../types/types';
+import type { User, UserUpdatePayload } from '../types/types';
 
-// Use env variable or default to true for development
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || true;
+// ENV CONFIGURATION:
+// Strict boolean check. Never default to 'true' in production code.
+// Ideally, this should be wrapped in a config utility, but I'll keep it here for now.
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
+
+// SIMULATED LATENCY: Constants make tweaking dev experience easier.
+const MOCK_DELAY_MS = 800;
 
 /**
  * Uploads a profile picture.
  * Returns the URL of the uploaded image.
  */
 export const uploadAvatarService = async (file: File): Promise<string> => {
+  // MOCK IMPLEMENTATION
   if (USE_MOCK) {
-    console.log(`[UserService] 🎭 Mock upload: ${file.name}`);
+    console.info(`[Mock] 📤 Uploading avatar: ${file.name}`);
     
     return new Promise((resolve) => {
       setTimeout(() => {
-        // Return a dynamic mock URL to see the change immediately
-        // Uses ui-avatars to generate a new image based on time
         resolve(`https://ui-avatars.com/api/?name=New+Avatar&background=random&time=${Date.now()}`);
-      }, 1500);
+      }, MOCK_DELAY_MS);
     });
   }
 
-  // Real API implementation
+  // REAL IMPLEMENTATION
   const formData = new FormData();
   formData.append('avatar', file);
 
@@ -33,38 +37,39 @@ export const uploadAvatarService = async (file: File): Promise<string> => {
 };
 
 /**
- * Updates the user's status.
+ * Updates profile details.
+ * @param data - The DTO containing only editable fields.
  */
-export const updateStatusService = async (status: User['status']): Promise<void> => {
+export const updateProfileService = async (data: UserUpdatePayload): Promise<User> => {
+  // MOCK IMPLEMENTATION
   if (USE_MOCK) {
-    console.log(`[UserService] 🎭 Mock update status: ${status}`);
-    return new Promise((resolve) => setTimeout(resolve, 600));
-  }
-
-  await apiClient.patch('/users/status', { status });
-};
-
-/**
- * Updates profile details (Name, etc.)
- */
-export const updateProfileService = async (data: Partial<User>): Promise<User> => {
-  if (USE_MOCK) {
-    console.log(`[UserService] 🎭 Mock update profile`, data);
+    console.info(`[Mock] 💾 Updating profile:`, data);
     return new Promise((resolve) => {
       setTimeout(() => {
-          // Return dummy data merged
-          resolve({ 
-              id: '1', 
-              email: 'demo@example.com', 
-              name: data.name || 'Updated Name', 
-              status: 'online',
-              avatar: '',
-              lastSeen: new Date()
-          } as User);
-      }, 800);
+        // SMART MOCKING:
+        // Instead of returning a hardcoded "demo" user, we return a merged object.
+        // In a real app, I would merge 'data' with the current user state, 
+        // but since services are stateless, I simulate a successful return 
+        // by reflecting the sent data back.
+        
+        // I constructed a partial User to simulate the API response
+        const mockResponse: User = {
+            id: 'mock-user-id', 
+            email: data.email,  
+            name: data.name,   
+            status: (data.status as User['status']) || 'online',
+            avatar: 'https://github.com/shadcn.png', 
+            lastSeen: new Date().toISOString() 
+        } as unknown as User; // Casting for mock simplicity
+
+        resolve(mockResponse);
+      }, MOCK_DELAY_MS);
     });
   }
 
+  // REAL IMPLEMENTATION
+  // We use patch because we are doing a partial update.
   const response = await apiClient.patch<User>('/users/profile', data);
+
   return response.data;
 };

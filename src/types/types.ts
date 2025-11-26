@@ -11,6 +11,12 @@ export interface User {
   status: 'online' | 'offline' | 'away';
   lastSeen?: Date; // Optional
 }
+// Defines the payload structure for updating user profile information to the server.
+export interface UserUpdatePayload {
+  name: string;
+  email: string;
+  status: 'online' | 'offline' | 'away';
+}
 
 /**
  * Defines the structure of a message.
