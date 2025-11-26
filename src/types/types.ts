@@ -9,9 +9,11 @@ export interface User {
   name: string;
   avatar?: string; // Optional
   status: 'online' | 'offline' | 'away';
-  lastSeen?: Date; // Optional
+  lastSeen?: string; // CHANGED: API returns ISO strings, not Date objects
 }
-// Defines the payload structure for updating user profile information to the server.
+
+// Defines the payload structure for updating user profile information.
+// We use a separate type to be strict about what can be sent to the API.
 export interface UserUpdatePayload {
   name: string;
   email: string;
@@ -19,17 +21,24 @@ export interface UserUpdatePayload {
 }
 
 /**
+ * DTO (Data Transfer Object) for the message sender.
+ * Optimization: Messages don't need the full user profile (email, status, etc).
+ * We use Pick to create a lightweight subset of the User.
+ */
+export type MessageSender = Pick<User, 'id' | 'name' | 'avatar'>;
+
+/**
  * Defines the structure of a message.
  */
 export interface Message {
   id: string;
   chatId: string;
-  sender: User;
+  sender: MessageSender; // FIXED: Now accepts the lightweight user object
   content: string;
-  timestamp: Date;
+  timestamp: string; // CHANGED: Safe typing for JSON responses
   type: 'text' | 'image' | 'file';
   status: 'sent' | 'delivered' | 'read';
-  replyTo?: string; // ID of the message this message replies to (Optional)
+  replyTo?: string; 
 }
 
 /**
@@ -39,36 +48,27 @@ export interface Chat {
   id: string;
   name: string;
   type: 'direct' | 'group';
-  participants: User[];
-  lastMessage?: Message; // Optional
+  participants: User[]; // In details, we might want full users, this is acceptable.
+  lastMessage?: Message;
   unreadCount: number;
-  createdAt: Date;
+  createdAt: string; // CHANGED: String for safety
 }
 
 // --- 2. CONTEXT STATES ---
 
-/**
- * Defines the structure of the global state for Authentication.
- */
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
 
-/**
- * Defines the structure of the global state for Chat and Message management.
- */
 export interface ChatState {
-  chats: Chat[]; // List of user's chats
-  activeChat: Chat | null; // The currently viewed chat
-  messages: Message[]; // Messages of the active chat
+  chats: Chat[]; 
+  activeChat: Chat | null; 
+  messages: Message[]; 
   isLoading: boolean;
 }
 
-/**
- * Credentials required for login.
- */
 export interface LoginCredentials {
   email: string;
   password: string;

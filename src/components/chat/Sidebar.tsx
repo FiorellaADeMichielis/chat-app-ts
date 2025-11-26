@@ -10,7 +10,7 @@ import { UserMenu } from './UserMenu';
 
 export const Sidebar: React.FC = () => {
   const { user } = useAuth();
-  const { chats, activeChat, setActiveChat } = useChat();
+  const { chats, activeChat, selectChat, } = useChat();
   const { theme, toggleTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -99,7 +99,7 @@ export const Sidebar: React.FC = () => {
             className={`flex items-center p-3 cursor-pointer border-b border-chat-item hover:bg-chat-hover transition-colors ${
               activeChat?.id === chat.id ? 'bg-chat-active border-l-4 border-chat-active-border' : ''
             }`}
-            onClick={() => setActiveChat(chat)}
+            onClick={() => selectChat(chat)}
           >
             <div className="flex-shrink-0 w-12 h-12 bg-chat-avatar rounded-full flex items-center justify-center mr-3">
               <div className="w-6 h-6 text-chat-avatar-text font-semibold">

@@ -23,6 +23,7 @@ interface ApiAuthResponse {
     email: string;
     status: string;
     avatar?: string;
+    lastSeen?: string; // API returns string, not Date
   };
 }
 
@@ -41,13 +42,14 @@ const adaptUserResponse = (apiUser: ApiAuthResponse['user']): User => {
     name: apiUser.name,
     email: apiUser.email,
     status: normalizeStatus(apiUser.status),
-    avatar: apiUser.avatar, // Pass through or undefined
-    lastSeen: new Date(), // Set default or parse from API
+    avatar: apiUser.avatar, 
+    //Convert Date object to ISO String immediately
+    lastSeen: apiUser.lastSeen || new Date().toISOString(), 
   };
 };
 
 // Use Environment Variable for Mock Mode
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || true; // Fallback to true for dev
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'; 
 
 export const authService = {
   
@@ -64,7 +66,7 @@ export const authService = {
           email: credentials.email,
           status: 'online',
           avatar: `https://ui-avatars.com/api/?name=${credentials.email}&background=random`,
-          lastSeen: new Date()
+          lastSeen: new Date().toISOString()
         },
       };
     }
@@ -90,7 +92,8 @@ export const authService = {
           email: data.email,
           status: 'online',
           avatar: `https://ui-avatars.com/api/?name=${data.name}&background=random`,
-          lastSeen: new Date()
+          // FIXED: .toISOString()
+          lastSeen: new Date().toISOString()
         },
       };
     }
@@ -122,11 +125,11 @@ export const authService = {
 
       return {
         id: '1',
-        name: 'Fiorella Dev',
+        name: 'User 1',
         email: 'demo@example.com',
         status: 'online',
         avatar: 'https://ui-avatars.com/api/?name=Fiorella+Dev',
-        lastSeen: new Date()
+        lastSeen: new Date().toISOString()
       };
     }
     
